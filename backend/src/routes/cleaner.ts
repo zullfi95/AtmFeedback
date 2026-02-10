@@ -425,6 +425,43 @@ router.get('/history', authenticateToken, requireRole(['CLEANER']), async (req, 
   }
 });
 
+// Get my route(s) for cleaner — маршрут с упорядоченными точками
+router.get('/my-route', authenticateToken, requireRole(['CLEANER']), async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const routes = await prisma.route.findMany({
+      where: { cleanerId: req.user.id },
+      orderBy: { orderNum: 'asc' },
+      include: {
+        routePoints: {
+          orderBy: { orderNum: 'asc' },
+          include: {
+            servicePoint: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                address: true,
+                latitude: true,
+                longitude: true,
+                company: { select: { id: true, name: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.json({ routes });
+  } catch (error) {
+    console.error('Get my route error:', error);
+    res.status(500).json({ error: 'Failed to fetch route' });
+  }
+});
+
 // Get assigned points for cleaner
 router.get('/assigned-points', authenticateToken, requireRole(['CLEANER']), async (req, res) => {
   try {

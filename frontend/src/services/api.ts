@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { isTokenExpired } from '../../shared-components/tokenUtils';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 // Get base URL from environment or use default
 const API_URL = import.meta.env.VITE_API_URL || '/feedbackatm/api';
@@ -207,7 +207,8 @@ export const cleanerAPI = {
   },
   getHistory: () => api.get('/cleaner/history'),
   getAssignedPoints: () => api.get('/cleaner/assigned-points'),
-  
+  getMyRoute: () => api.get('/cleaner/my-route'),
+
   // Backwards compatibility
   getAssignedATMs: () => api.get('/cleaner/assigned-points'),
 };

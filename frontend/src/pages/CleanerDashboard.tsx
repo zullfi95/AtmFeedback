@@ -6,7 +6,11 @@ import {
   MapPin,
   Calendar,
   History,
-  Menu
+  Menu,
+  Route,
+  ChevronLeft,
+  ExternalLink,
+  Camera
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cleanerAPI } from '../services/api';
@@ -28,7 +32,27 @@ interface Task {
     name: string;
     type: 'ATM' | 'BUS_STOP';
     address: string;
+    latitude?: number | null;
+    longitude?: number | null;
   };
+}
+
+interface RoutePoint {
+  id: string;
+  servicePoint: {
+    id: string;
+    name: string;
+    address?: string;
+    type?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  };
+}
+
+interface RouteItem {
+  id: string;
+  name: string;
+  routePoints: RoutePoint[];
 }
 
 const CleanerDashboard = () => {
@@ -38,13 +62,15 @@ const CleanerDashboard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'history' | 'atms'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'history' | 'atms' | 'route'>('tasks');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [completionNotes, setCompletionNotes] = useState('');
   const [photoBefore, setPhotoBefore] = useState<File | null>(null);
   const [photoAfter, setPhotoAfter] = useState<File | null>(null);
   const [photoDamage, setPhotoDamage] = useState<File | null>(null);
   const [assignedATMs, setAssignedATMs] = useState<any[]>([]);
+  const [myRoutes, setMyRoutes] = useState<RouteItem[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<RouteItem | null>(null);
 
   useEffect(() => {
     loadData();
@@ -56,7 +82,7 @@ const CleanerDashboard = () => {
     
     try {
       console.log('📡 Making API requests...');
-      const [tasksRes, historyRes, atmsRes] = await Promise.all([
+      const [tasksRes, historyRes, atmsRes, routeRes] = await Promise.all([
         cleanerAPI.getTasks().catch(err => {
           console.error('❌ Tasks API error:', err);
           return { data: { tasks: [] } };
@@ -68,6 +94,10 @@ const CleanerDashboard = () => {
         cleanerAPI.getAssignedATMs().catch(err => {
           console.error('❌ Assigned ATMs API error:', err);
           return { data: { servicePoints: [], atms: [] } };
+        }),
+        cleanerAPI.getMyRoute().catch(err => {
+          console.error('❌ My route API error:', err);
+          return { data: { routes: [] } };
         })
       ]);
 
@@ -85,11 +115,7 @@ const CleanerDashboard = () => {
       console.log('✅ Assigned points count:', assignedPoints.length);
       console.log('✅ Setting assignedATMs state with:', assignedPoints);
       setAssignedATMs(assignedPoints);
-      
-      // Force re-render check
-      setTimeout(() => {
-        console.log('✅ State check after 100ms - assignedATMs:', assignedPoints);
-      }, 100);
+      setMyRoutes(routeRes?.data?.routes || []);
       
       if (assignedPoints.length === 0) {
         console.warn('⚠️ No assigned points found! Check if admin assigned points to this cleaner.');
@@ -177,6 +203,21 @@ const CleanerDashboard = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Ссылки для открытия точки в картах (мобильный сценарий)
+  const getMapUrls = (point: { address?: string; latitude?: number | null; longitude?: number | null }) => {
+    const lat = point.latitude;
+    const lng = point.longitude;
+    const addr = point.address || '';
+    const query = lat != null && lng != null ? `${lat},${lng}` : encodeURIComponent(addr);
+    return {
+      google: `https://www.google.com/maps?q=${query}`,
+      waze: lat != null && lng != null ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`
+    };
+  };
+
+  const getTaskForPoint = (servicePointId: string) => tasks.find(t => t.servicePoint.id === servicePointId);
+  const getCompletedTaskForPoint = (servicePointId: string) => history.find(t => t.servicePoint.id === servicePointId);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -231,25 +272,27 @@ const CleanerDashboard = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Tabs — мобильные: крупнее и с touch-manipulation */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex gap-2 sm:gap-4 overflow-x-auto pb-px">
             {[
-              { id: 'tasks', name: 'My Tasks', icon: CheckCircle },
-              { id: 'history', name: 'History', icon: History },
-              { id: 'atms', name: 'My ATMs', icon: MapPin }
+              { id: 'tasks', name: 'Задачи', icon: CheckCircle },
+              { id: 'route', name: 'Маршрут', icon: Route },
+              { id: 'history', name: 'История', icon: History },
+              { id: 'atms', name: 'Мои точки', icon: MapPin }
             ].map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`flex items-center py-3 px-2 sm:px-3 border-b-2 font-medium text-sm min-h-[44px] touch-manipulation whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-primary text-primary'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <tab.icon className="h-4 w-4 mr-2" />
+                <tab.icon className="h-4 w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
                 {tab.name}
               </button>
             ))}
@@ -287,18 +330,130 @@ const CleanerDashboard = () => {
                     </div>
 
                     {(task.status === 'PENDING' || task.status === 'IN_PROGRESS') && (
-                      <button
-                        onClick={() => setSelectedTask(task)}
-                        className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center justify-center"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Complete Task
-                      </button>
+                      <>
+                        <p className="text-xs text-gray-500 mb-2">При завершении можно прикрепить фото (до/после уборки, повреждения).</p>
+                        <button
+                          onClick={() => setSelectedTask(task)}
+                          className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center justify-center"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Complete Task (с фото)
+                        </button>
+                      </>
                     )}
                   </div>
                 ))}
                 
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Маршрут Tab — мобильный: список маршрутов → по нажатию точки маршрута + карта + фото/чек */}
+        {activeTab === 'route' && (
+          <div className="pb-8 md:pb-0">
+            {selectedRoute ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRoute(null)}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 min-h-[44px] touch-manipulation"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  <span className="text-base font-medium">К маршрутам</span>
+                </button>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{selectedRoute.name}</h2>
+                <div className="space-y-4">
+                  {(selectedRoute.routePoints || []).map((rp: RoutePoint, idx: number) => {
+                    const task = getTaskForPoint(rp.servicePoint.id);
+                    const completedTask = getCompletedTaskForPoint(rp.servicePoint.id);
+                    const urls = getMapUrls(rp.servicePoint);
+                    const canComplete = task && (task.status === 'PENDING' || task.status === 'IN_PROGRESS');
+                    const isCompleted = !!completedTask || (task && task.status === 'COMPLETED');
+                    return (
+                      <div key={rp.id} className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+                        <div className="p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-gray-900">{rp.servicePoint?.name || '—'}</h3>
+                              <p className="text-sm text-gray-500 mt-0.5">{rp.servicePoint?.address || ''}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-4">
+                            <a
+                              href={urls.google}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] touch-manipulation text-sm font-medium"
+                            >
+                              <MapPin className="h-4 w-4" />
+                              Google Карты
+                            </a>
+                            <a
+                              href={urls.waze}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] touch-manipulation text-sm font-medium"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Waze
+                            </a>
+                            {canComplete && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedTask(task)}
+                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 min-h-[44px] touch-manipulation text-sm font-medium flex-1"
+                              >
+                                <Camera className="h-4 w-4" />
+                                Фото и завершить
+                              </button>
+                            )}
+                            {isCompleted && (
+                              <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-green-100 text-green-800 min-h-[44px] text-sm font-medium">
+                                <CheckCircle className="h-4 w-4" />
+                                Уборка завершена
+                              </span>
+                            )}
+                            {!task && (
+                              <span className="text-sm text-gray-400 py-2.5">Нет задачи на сегодня</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Мой маршрут</h2>
+                {myRoutes.length === 0 ? (
+                  <div className="bg-white p-8 rounded-xl shadow text-center">
+                    <Route className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Маршрут не назначен</h3>
+                    <p className="mt-1 text-sm text-gray-500">Обратитесь к менеджеру или администратору.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myRoutes.map((route) => (
+                      <button
+                        type="button"
+                        key={route.id}
+                        onClick={() => setSelectedRoute(route)}
+                        className="w-full text-left bg-white rounded-xl shadow border border-gray-100 p-4 hover:bg-gray-50 active:bg-gray-100 min-h-[56px] touch-manipulation flex items-center justify-between"
+                      >
+                        <span className="font-semibold text-gray-900">{route.name}</span>
+                        <span className="text-sm text-gray-500">
+                          {(route.routePoints || []).length} точек
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -446,35 +601,34 @@ const CleanerDashboard = () => {
         )}
       </div>
 
-      {/* Task Completion Modal */}
+      {/* Task Completion Modal — мобильный: прокрутка, крупные кнопки */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Complete Task: {selectedTask.servicePoint.name}
-            </h3>
-
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-gray-600/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-md sm:rounded-xl shadow-xl max-h-[90vh] overflow-y-auto rounded-t-xl">
+            <div className="p-4 sm:p-6 sticky top-0 bg-white border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Завершить: {selectedTask.servicePoint.name}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">Загрузите фото до и после уборки.</p>
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes (optional)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Заметки (необязательно)</label>
                 <textarea
                   value={completionNotes}
                   onChange={(e) => setCompletionNotes(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  rows={3}
-                  placeholder="Add any notes about the cleaning..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
+                  rows={2}
+                  placeholder="Заметки по уборке..."
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">До уборки (фото)</label>
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
                   onChange={(e) => handleSinglePhoto(e, setPhotoBefore, 'До уборки')}
-                  className="w-full text-sm"
+                  className="w-full text-sm min-h-[44px]"
                 />
                 {photoBefore && <p className="text-xs text-gray-500 mt-0.5">{photoBefore.name}</p>}
               </div>
@@ -484,24 +638,24 @@ const CleanerDashboard = () => {
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
                   onChange={(e) => handleSinglePhoto(e, setPhotoAfter, 'После уборки')}
-                  className="w-full text-sm"
+                  className="w-full text-sm min-h-[44px]"
                 />
                 {photoAfter && <p className="text-xs text-gray-500 mt-0.5">{photoAfter.name}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Повреждения (фото, при наличии)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Повреждения (если есть)</label>
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
                   onChange={(e) => handleSinglePhoto(e, setPhotoDamage, 'Повреждения')}
-                  className="w-full text-sm"
+                  className="w-full text-sm min-h-[44px]"
                 />
                 {photoDamage && <p className="text-xs text-gray-500 mt-0.5">{photoDamage.name}</p>}
               </div>
             </div>
-
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="p-4 sm:p-6 flex gap-3 border-t border-gray-100">
               <button
+                type="button"
                 onClick={() => {
                   setSelectedTask(null);
                   setCompletionNotes('');
@@ -509,16 +663,17 @@ const CleanerDashboard = () => {
                   setPhotoAfter(null);
                   setPhotoDamage(null);
                 }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="flex-1 py-3 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium min-h-[48px] touch-manipulation"
               >
-                Cancel
+                Отмена
               </button>
               <button
+                type="button"
                 onClick={completeTask}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
+                className="flex-1 py-3 px-4 rounded-lg bg-green-600 text-white font-medium min-h-[48px] touch-manipulation flex items-center justify-center gap-2"
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Complete Task
+                <CheckCircle className="h-5 w-5" />
+                Завершить уборку
               </button>
             </div>
           </div>
