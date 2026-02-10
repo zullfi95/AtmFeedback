@@ -429,7 +429,7 @@ const CleanerDashboard = () => {
                             {!isCompleted && (
                               <button
                                 type="button"
-                                onClick={() => setSelectedTask(pointTask ?? { servicePoint: rp.servicePoint })}
+                                onClick={() => setSelectedTask((pointTask ?? { servicePoint: rp.servicePoint } as Task))}
                                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 min-h-[44px] touch-manipulation text-sm font-medium flex-1"
                               >
                                 <Camera className="h-4 w-4" />
