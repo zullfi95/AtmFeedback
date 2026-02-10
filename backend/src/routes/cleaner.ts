@@ -320,9 +320,9 @@ router.put('/complete-by-point/:servicePointId', authenticateToken, requireRole(
       where: {
         servicePointId,
         cleanerId: req.user.id,
-        scheduledAt: { gte: today, lt: tomorrow },
-        status: { in: ['PENDING', 'IN_PROGRESS'] }
-      }
+        scheduledAt: { gte: today, lt: tomorrow }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     if (!task) {

@@ -546,7 +546,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['ADMIN']), async 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // 1. All service points with their status for today
+    // 1. All service points with their status for today (all tasks per point to compute status correctly)
     const servicePoints = await prisma.servicePoint.findMany({
       include: {
         company: { select: { id: true, name: true } },
@@ -557,8 +557,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['ADMIN']), async 
               lte: endOfDay
             }
           },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
+          orderBy: [{ status: 'desc' }, { completedAt: 'desc' }, { createdAt: 'desc' }],
           include: {
             cleaner: { select: { id: true, username: true } }
           }
@@ -607,12 +606,18 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['ADMIN']), async 
     ]);
 
     res.json({
-      servicePoints: servicePoints.map(sp => ({
-        ...sp,
-        todayTask: sp.cleaningTasks[0] || null,
-        status: sp.cleaningTasks[0]?.status || 'PENDING',
-        assignedCleaners: sp.cleanerAssignments.map(ca => ca.cleaner)
-      })),
+      servicePoints: servicePoints.map(sp => {
+        const todayTasks = sp.cleaningTasks || [];
+        const completedTask = todayTasks.find((t: { status: string }) => t.status === 'COMPLETED');
+        const displayTask = completedTask || todayTasks[0] || null;
+        const pointStatus = completedTask ? 'COMPLETED' : (todayTasks.length ? 'PENDING' : 'PENDING');
+        return {
+          ...sp,
+          todayTask: displayTask,
+          status: pointStatus,
+          assignedCleaners: sp.cleanerAssignments.map(ca => ca.cleaner)
+        };
+      }),
       cleaners: cleaners.map(c => ({
         ...c,
         todayTasks: c.cleaningTasks
