@@ -216,7 +216,20 @@ const CleanerDashboard = () => {
   };
 
   const getTaskForPoint = (servicePointId: string) => tasks.find(t => t.servicePoint.id === servicePointId);
-  const getCompletedTaskForPoint = (servicePointId: string) => history.find(t => t.servicePoint.id === servicePointId);
+
+  // «Уборка завершена» только если задача по этой точке завершена сегодня (не из старой истории)
+  const getCompletedTaskForPoint = (servicePointId: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return history.find((t) => {
+      if (t.servicePoint.id !== servicePointId) return false;
+      const completedAt = t.completedAt ? new Date(t.completedAt) : null;
+      if (!completedAt) return false;
+      const d = new Date(completedAt);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    });
+  };
 
   if (loading) {
     return (
