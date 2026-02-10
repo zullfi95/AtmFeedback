@@ -205,6 +205,16 @@ export const cleanerAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  completeByPoint: (servicePointId: string, data: { notes?: string; photoBefore?: File; photoAfter?: File; photoDamage?: File }) => {
+    const formData = new FormData();
+    if (data.notes) formData.append('notes', data.notes);
+    if (data.photoBefore) formData.append('photoBefore', data.photoBefore);
+    if (data.photoAfter) formData.append('photoAfter', data.photoAfter);
+    if (data.photoDamage) formData.append('photoDamage', data.photoDamage);
+    return api.put(`/cleaner/complete-by-point/${servicePointId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   getHistory: () => api.get('/cleaner/history'),
   getAssignedPoints: () => api.get('/cleaner/assigned-points'),
   getMyRoute: () => api.get('/cleaner/my-route'),

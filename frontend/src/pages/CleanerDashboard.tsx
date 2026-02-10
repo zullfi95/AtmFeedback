@@ -115,7 +115,11 @@ const CleanerDashboard = () => {
       console.log('✅ Assigned points count:', assignedPoints.length);
       console.log('✅ Setting assignedATMs state with:', assignedPoints);
       setAssignedATMs(assignedPoints);
-      setMyRoutes(routeRes?.data?.routes || []);
+      const routesRaw = routeRes?.data?.routes || [];
+      setMyRoutes(Array.isArray(routesRaw) ? routesRaw.map((r: any) => ({
+        ...r,
+        routePoints: Array.isArray(r.routePoints) ? r.routePoints : (r.route_points || [])
+      })) : []);
       
       if (assignedPoints.length === 0) {
         console.warn('⚠️ No assigned points found! Check if admin assigned points to this cleaner.');
@@ -138,12 +142,17 @@ const CleanerDashboard = () => {
     if (!selectedTask) return;
 
     try {
-      await cleanerAPI.completeTask(selectedTask.id, {
+      const payload = {
         notes: completionNotes,
         photoBefore: photoBefore || undefined,
         photoAfter: photoAfter || undefined,
         photoDamage: photoDamage || undefined
-      });
+      };
+      if ('id' in selectedTask && selectedTask.id) {
+        await cleanerAPI.completeTask(selectedTask.id, payload);
+      } else {
+        await cleanerAPI.completeByPoint(selectedTask.servicePoint.id, payload);
+      }
 
       toast.success('Task completed successfully');
       setSelectedTask(null);
@@ -376,15 +385,18 @@ const CleanerDashboard = () => {
                   <span className="text-base font-medium">К маршрутам</span>
                 </button>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">{selectedRoute.name}</h2>
+                {(() => {
+                  const points: RoutePoint[] = Array.isArray(selectedRoute.routePoints) ? [...selectedRoute.routePoints] : [];
+                  return (
                 <div className="space-y-4">
-                  {(selectedRoute.routePoints || []).map((rp: RoutePoint, idx: number) => {
+                  {points.map((rp: RoutePoint, idx: number) => {
                     const task = getTaskForPoint(rp.servicePoint.id);
                     const completedTask = getCompletedTaskForPoint(rp.servicePoint.id);
                     const urls = getMapUrls(rp.servicePoint);
-                    const canComplete = task && (task.status === 'PENDING' || task.status === 'IN_PROGRESS');
                     const isCompleted = !!completedTask || (task && task.status === 'COMPLETED');
+                    const pointTask = task && (task.status === 'PENDING' || task.status === 'IN_PROGRESS') ? task : null;
                     return (
-                      <div key={rp.id} className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+                      <div key={`${selectedRoute.id}-${rp.id ?? rp.servicePoint?.id}-${idx}`} className="bg-white rounded-xl shadow border border-gray-100 overflow-visible">
                         <div className="p-4">
                           <div className="flex items-start gap-3">
                             <span className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
@@ -414,10 +426,10 @@ const CleanerDashboard = () => {
                               <ExternalLink className="h-4 w-4" />
                               Waze
                             </a>
-                            {canComplete && (
+                            {!isCompleted && (
                               <button
                                 type="button"
-                                onClick={() => setSelectedTask(task)}
+                                onClick={() => setSelectedTask(pointTask ?? { servicePoint: rp.servicePoint })}
                                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 min-h-[44px] touch-manipulation text-sm font-medium flex-1"
                               >
                                 <Camera className="h-4 w-4" />
@@ -430,15 +442,14 @@ const CleanerDashboard = () => {
                                 Уборка завершена
                               </span>
                             )}
-                            {!task && (
-                              <span className="text-sm text-gray-400 py-2.5">Нет задачи на сегодня</span>
-                            )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
+                  );
+                })()}
               </>
             ) : (
               <>
