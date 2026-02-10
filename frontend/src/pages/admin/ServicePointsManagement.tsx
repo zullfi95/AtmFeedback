@@ -12,18 +12,33 @@ export default function ServicePointsManagement() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [newPoint, setNewPoint] = useState({
+  const [newPoint, setNewPoint] = useState<{
+    name: string;
+    type: 'ATM' | 'BUS_STOP';
+    address: string;
+    latitude: string;
+    longitude: string;
+    companyId: string;
+  }>({
     name: '',
-    type: 'ATM' as const,
+    type: 'ATM',
     address: '',
     latitude: '',
     longitude: '',
     companyId: '',
   });
-  const [editPoint, setEditPoint] = useState({
+  const [editPoint, setEditPoint] = useState<{
+    id: string;
+    name: string;
+    type: 'ATM' | 'BUS_STOP';
+    address: string;
+    latitude: string;
+    longitude: string;
+    companyId: string;
+  }>({
     id: '',
     name: '',
-    type: 'ATM' as const,
+    type: 'ATM',
     address: '',
     latitude: '',
     longitude: '',
