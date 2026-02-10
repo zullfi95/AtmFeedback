@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import CleanerDashboard from './pages/CleanerDashboard';
-import LoginPage from './pages/LoginPage';
 import MapView from './pages/MapView';
 import './App.css';
 
@@ -16,10 +15,7 @@ function App() {
       <Router basename="/feedbackatm">
         <div className="App">
           <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-
-            {/* Protected routes */}
+            {/* Все маршруты защищены; вход/выход только через портал */}
             <Route path="/" element={
               <ProtectedRoute>
                 <DashboardRouter />

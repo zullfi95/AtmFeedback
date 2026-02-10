@@ -137,6 +137,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('feedbackatm_token');
     localStorage.removeItem('mintstudio_refresh_token');
     setUser(null);
+    // Выход только через портал — редирект на портал
+    window.location.href = '/';
   };
 
   const value = {

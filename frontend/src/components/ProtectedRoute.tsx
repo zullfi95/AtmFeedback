@@ -34,7 +34,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole,
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Вход только через портал — редирект на корень сайта (портал)
+    window.location.href = '/';
+    return null;
   }
 
   if (roles && roles.length > 0 && user?.role) {
