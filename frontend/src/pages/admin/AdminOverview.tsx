@@ -154,8 +154,8 @@ export default function AdminOverview() {
         </div>
       </div>
 
-      {/* Карта — уменьшенная высота */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+      {/* Карта — изолированный z-index, чтобы лайтбокс фото был поверх */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 relative z-0">
         <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
           <h2 className="text-sm font-bold text-gray-800">{t('dashboard.admin.overview.statusMap')}</h2>
           <div className="flex space-x-3 text-xs text-gray-600">
@@ -163,8 +163,8 @@ export default function AdminOverview() {
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] mr-1" />{t('dashboard.admin.overview.pending')}</span>
           </div>
         </div>
-        <div className="h-[220px] sm:h-[260px]">
-          <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
+        <div className="h-[220px] sm:h-[260px] relative z-0">
+          <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }} className="z-0">
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {(data.servicePoints || []).map((point: any) => (
               <Marker
@@ -325,10 +325,10 @@ export default function AdminOverview() {
         </div>
       </div>
 
-      {/* Lightbox: раскрытие фото по клику */}
+      {/* Lightbox: поверх карты (Leaflet использует высокий z-index) */}
       {lightboxUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightboxUrl(null)}
           role="dialog"
           aria-modal="true"
