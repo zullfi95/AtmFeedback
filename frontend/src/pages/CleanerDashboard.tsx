@@ -633,7 +633,7 @@ const CleanerDashboard = () => {
               <h3 className="text-lg font-semibold text-gray-900">
                 Завершить: {selectedTask.servicePoint.name}
               </h3>
-              <p className="text-sm text-gray-500 mt-1">Загрузите фото до и после уборки.</p>
+              <p className="text-sm text-gray-500 mt-1">На каждую точку — 3 фото: до уборки, после уборки, повреждения.</p>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
               <div>
@@ -646,35 +646,40 @@ const CleanerDashboard = () => {
                   placeholder="Заметки по уборке..."
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">До уборки (фото)</label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={(e) => handleSinglePhoto(e, setPhotoBefore, 'До уборки')}
-                  className="w-full text-sm min-h-[44px]"
-                />
-                {photoBefore && <p className="text-xs text-gray-500 mt-0.5">{photoBefore.name}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">После уборки (фото)</label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={(e) => handleSinglePhoto(e, setPhotoAfter, 'После уборки')}
-                  className="w-full text-sm min-h-[44px]"
-                />
-                {photoAfter && <p className="text-xs text-gray-500 mt-0.5">{photoAfter.name}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Повреждения (если есть)</label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={(e) => handleSinglePhoto(e, setPhotoDamage, 'Повреждения')}
-                  className="w-full text-sm min-h-[44px]"
-                />
-                {photoDamage && <p className="text-xs text-gray-500 mt-0.5">{photoDamage.name}</p>}
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">3 фото на точку</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">1. До уборки (обязательно)</label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={(e) => handleSinglePhoto(e, setPhotoBefore, 'До уборки')}
+                      className="w-full text-sm min-h-[44px]"
+                    />
+                    {photoBefore ? <p className="text-xs text-green-600 mt-0.5">✓ {photoBefore.name}</p> : <p className="text-xs text-amber-600 mt-0.5">Загрузите фото</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">2. После уборки (обязательно)</label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={(e) => handleSinglePhoto(e, setPhotoAfter, 'После уборки')}
+                      className="w-full text-sm min-h-[44px]"
+                    />
+                    {photoAfter ? <p className="text-xs text-green-600 mt-0.5">✓ {photoAfter.name}</p> : <p className="text-xs text-amber-600 mt-0.5">Загрузите фото</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">3. Повреждения (если есть)</label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={(e) => handleSinglePhoto(e, setPhotoDamage, 'Повреждения')}
+                      className="w-full text-sm min-h-[44px]"
+                    />
+                    {photoDamage ? <p className="text-xs text-green-600 mt-0.5">✓ {photoDamage.name}</p> : <p className="text-xs text-gray-500 mt-0.5">Необязательно</p>}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="p-4 sm:p-6 flex gap-3 border-t border-gray-100">
@@ -694,12 +699,16 @@ const CleanerDashboard = () => {
               <button
                 type="button"
                 onClick={completeTask}
-                className="flex-1 py-3 px-4 rounded-lg bg-green-600 text-white font-medium min-h-[48px] touch-manipulation flex items-center justify-center gap-2"
+                disabled={!photoBefore || !photoAfter}
+                className="flex-1 py-3 px-4 rounded-lg bg-green-600 text-white font-medium min-h-[48px] touch-manipulation flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle className="h-5 w-5" />
                 Завершить уборку
               </button>
             </div>
+            {(!photoBefore || !photoAfter) && (
+              <p className="px-4 pb-3 text-xs text-center text-amber-600">Загрузите фото «до» и «после» уборки</p>
+            )}
           </div>
         </div>
       )}
