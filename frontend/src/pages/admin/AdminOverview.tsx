@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Clock, CheckCircle, XCircle, FileSpreadsheet, FileText, Archive } from 'lucide-react';
+import { MapPin, Clock, CheckCircle, XCircle, FileSpreadsheet, FileText, Archive, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../services/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -14,6 +14,10 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<'excel' | 'pdf' | 'zip' | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([40.4093, 49.8671]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  const photoUrl = (url: string | null | undefined) =>
+    url ? (url.startsWith('http') ? url : `/feedbackatm/api${url}`) : null;
 
   useEffect(() => {
     loadDashboardStats();
@@ -248,25 +252,69 @@ export default function AdminOverview() {
                       <span className="text-xs text-gray-500">{completed}/{total} ({percent}%)</span>
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      <div className="space-y-0.5">
-                        {(cleaner.todayTasks || []).filter((task: any) => task.status === 'COMPLETED').map((task: any) => (
-                          <div key={task.id} className="flex items-center gap-1 text-gray-500">
-                            <span className="font-medium">{task.completedAt ? new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                            <span>{task.servicePoint?.name}</span>
-                            {(task.photos || task.photoBefore) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const url = task.photoBefore || (() => { try { const p = JSON.parse(task.photos); return p?.[0]; } catch { return null; } })();
-                                  if (url) window.open(url.startsWith('http') ? url : `/feedbackatm/api${url}`, '_blank');
-                                }}
-                                className="text-primary hover:underline"
-                              >
-                                [{t('dashboard.admin.overview.photo')}]
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                      <div className="space-y-1">
+                        {(cleaner.todayTasks || []).filter((task: any) => task.status === 'COMPLETED').map((task: any) => {
+                          const before = photoUrl(task.photoBefore);
+                          const after = photoUrl(task.photoAfter);
+                          const damage = photoUrl(task.photoDamage);
+                          const hasPhotos = before || after || damage;
+                          const legacyUrls = (() => { try { const p = task.photos && JSON.parse(task.photos); return Array.isArray(p) ? p : []; } catch { return []; } })();
+                          return (
+                            <div key={task.id} className="flex flex-wrap items-center gap-1 text-gray-500">
+                              <span className="font-medium shrink-0">{task.completedAt ? new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                              <span className="shrink-0">{task.servicePoint?.name}</span>
+                              {(hasPhotos || legacyUrls.length > 0) && (
+                                <div className="flex items-center gap-0.5 mt-0.5">
+                                  {before && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setLightboxUrl(before)}
+                                      className="block rounded overflow-hidden border border-gray-200 hover:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                      title={t('dashboard.admin.overview.photoBefore')}
+                                    >
+                                      <img src={before} alt="" className="w-8 h-8 object-cover" />
+                                    </button>
+                                  )}
+                                  {after && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setLightboxUrl(after)}
+                                      className="block rounded overflow-hidden border border-gray-200 hover:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                      title={t('dashboard.admin.overview.photoAfter')}
+                                    >
+                                      <img src={after} alt="" className="w-8 h-8 object-cover" />
+                                    </button>
+                                  )}
+                                  {damage && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setLightboxUrl(damage)}
+                                      className="block rounded overflow-hidden border border-gray-200 hover:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                      title={t('dashboard.admin.overview.photoDamage')}
+                                    >
+                                      <img src={damage} alt="" className="w-8 h-8 object-cover" />
+                                    </button>
+                                  )}
+                                  {legacyUrls.map((url: string, idx: number) => {
+                                    const u = photoUrl(url);
+                                    if (!u) return null;
+                                    return (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => setLightboxUrl(u)}
+                                        className="block rounded overflow-hidden border border-gray-200 hover:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                        title={t('dashboard.admin.overview.photo')}
+                                      >
+                                        <img src={u} alt="" className="w-8 h-8 object-cover" />
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </td>
                   </tr>
@@ -276,6 +324,32 @@ export default function AdminOverview() {
           </table>
         </div>
       </div>
+
+      {/* Lightbox: раскрытие фото по клику */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('dashboard.admin.overview.photo')}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 p-1 rounded-full bg-white/10 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="Close"
+          >
+            <X className="h-8 w-8" />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-[90vh] object-contain rounded shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
