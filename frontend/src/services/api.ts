@@ -164,6 +164,10 @@ export const adminAPI = {
 
   // Dashboard
   getDashboardStats: () => api.get('/admin/dashboard-stats'),
+
+  // Reports export (Excel, PDF, ZIP)
+  exportReport: (format: 'excel' | 'pdf' | 'zip') =>
+    api.get(`/admin/reports/export?format=${format}`, { responseType: 'blob' }),
 };
 
 // Manager API

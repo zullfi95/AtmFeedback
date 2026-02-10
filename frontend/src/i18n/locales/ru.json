@@ -129,7 +129,39 @@
       "selectAll": "Выбрать все",
       "deselectAll": "Снять выбор",
       "points": "точки",
-      "selected": "выбрано"
+      "selected": "выбрано",
+      "overview": {
+        "title": "Операционная панель",
+        "subtitle": "Обзор на сегодня",
+        "totalPoints": "Всего точек",
+        "tasksToday": "Задачи на сегодня",
+        "completed": "Выполнено",
+        "statusMap": "Карта статусов",
+        "cleaned": "Убрано",
+        "pending": "Ожидает",
+        "cleanerShiftsProgress": "Смены и прогресс клинеров",
+        "cleaner": "Клинер",
+        "assignedPoints": "Назначенные точки",
+        "progress": "Прогресс",
+        "details": "Детали",
+        "noTasksScheduledToday": "Нет задач на сегодня",
+        "photo": "Фото",
+        "todayTask": "Задача на сегодня",
+        "assignedCleaner": "Назначенный клинер",
+        "assignedCleaners": "Назначенные клинеры",
+        "failedToLoad": "Не удалось загрузить данные",
+        "reports": "Отчётность",
+        "exportExcel": "Выгрузить Excel",
+        "exportPdf": "Выгрузить PDF",
+        "exportZip": "Выгрузить архив (ZIP)"
+      },
+      "nav": {
+        "dashboard": "Панель",
+        "users": "Пользователи",
+        "companies": "Компании",
+        "servicePoints": "Точки обслуживания",
+        "routes": "Маршруты"
+      }
     },
     "manager": {
       "title": "Панель менеджера",

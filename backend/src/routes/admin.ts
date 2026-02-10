@@ -17,6 +17,7 @@ import {
 } from '../validations/admin';
 import bcrypt from 'bcryptjs';
 import { createUserInMintAuth, updateUserInMintAuth, deleteUserFromMintAuth, getTokenFromRequest } from '../utils/mintauthSync';
+import { buildTasksExcel, buildReportPdf, buildReportZip } from '../utils/reportExport';
 
 const router = Router();
 
@@ -626,6 +627,40 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['ADMIN']), async 
   } catch (error) {
     console.error('Get dashboard stats error:', error);
     res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+  }
+});
+
+// Export reports: Excel, PDF, ZIP (Admin only)
+router.get('/reports/export', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const format = String(req.query.format || 'excel').toLowerCase();
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    if (format === 'excel' || format === 'xlsx') {
+      const buf = await buildTasksExcel(prisma);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=report_${dateStr}.xlsx`);
+      return res.send(buf);
+    }
+
+    if (format === 'pdf') {
+      const buf = await buildReportPdf(prisma);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=report_${dateStr}.pdf`);
+      return res.send(buf);
+    }
+
+    if (format === 'zip' || format === 'rar') {
+      const buf = await buildReportZip(prisma);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename=report_${dateStr}.zip`);
+      return res.send(buf);
+    }
+
+    return res.status(400).json({ error: 'Invalid format. Use excel, pdf, or zip' });
+  } catch (error) {
+    console.error('Reports export error:', error);
+    res.status(500).json({ error: 'Failed to export report' });
   }
 });
 

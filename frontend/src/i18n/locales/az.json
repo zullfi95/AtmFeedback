@@ -129,7 +129,39 @@
       "selectAll": "Hamısını seç",
       "deselectAll": "Seçimi ləğv et",
       "points": "nöqtələr",
-      "selected": "seçildi"
+      "selected": "seçildi",
+      "overview": {
+        "title": "Əməliyyat paneli",
+        "subtitle": "Bu günün vəziyyəti",
+        "totalPoints": "Ümumi nöqtələr",
+        "tasksToday": "Bu günün tapşırıqları",
+        "completed": "Tamamlandı",
+        "statusMap": "Status xəritəsi",
+        "cleaned": "Təmizlənib",
+        "pending": "Gözləyir",
+        "cleanerShiftsProgress": "Təmizləyicilər — növbə və tərəqqi",
+        "cleaner": "Təmizləyici",
+        "assignedPoints": "Təyin edilmiş nöqtələr",
+        "progress": "Tərəqqi",
+        "details": "Təfərrüat",
+        "noTasksScheduledToday": "Bu gün tapşırıq yoxdur",
+        "photo": "Foto",
+        "todayTask": "Bu günün tapşırığı",
+        "assignedCleaner": "Təyin edilmiş təmizləyici",
+        "assignedCleaners": "Təyin edilmiş təmizləyicilər",
+        "failedToLoad": "Məlumat yüklənə bilmədi",
+        "reports": "Hesabat",
+        "exportExcel": "Excel endir",
+        "exportPdf": "PDF endir",
+        "exportZip": "Arxiv (ZIP) endir"
+      },
+      "nav": {
+        "dashboard": "Panel",
+        "users": "İstifadəçilər",
+        "companies": "Şirkətlər",
+        "servicePoints": "Xidmət nöqtələri",
+        "routes": "Marşrutlar"
+      }
     },
     "manager": {
       "title": "Menecer paneli",

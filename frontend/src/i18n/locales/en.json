@@ -129,7 +129,39 @@
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "points": "points",
-      "selected": "selected"
+      "selected": "selected",
+      "overview": {
+        "title": "Operational Dashboard",
+        "subtitle": "Today's status overview",
+        "totalPoints": "Total Points",
+        "tasksToday": "Tasks Today",
+        "completed": "Completed",
+        "statusMap": "Status Map",
+        "cleaned": "Cleaned",
+        "pending": "Pending",
+        "cleanerShiftsProgress": "Cleaner Shifts & Progress",
+        "cleaner": "Cleaner",
+        "assignedPoints": "Assigned Points",
+        "progress": "Progress",
+        "details": "Details",
+        "noTasksScheduledToday": "No tasks scheduled for today",
+        "photo": "Photo",
+        "todayTask": "Today's Task",
+        "assignedCleaner": "Assigned Cleaner",
+        "assignedCleaners": "Assigned Cleaners",
+        "failedToLoad": "Failed to load dashboard statistics",
+        "reports": "Reports",
+        "exportExcel": "Export Excel",
+        "exportPdf": "Export PDF",
+        "exportZip": "Export archive (ZIP)"
+      },
+      "nav": {
+        "dashboard": "Dashboard",
+        "users": "Users",
+        "companies": "Companies",
+        "servicePoints": "Service Points",
+        "routes": "Routes"
+      }
     },
     "manager": {
       "title": "Manager Dashboard",

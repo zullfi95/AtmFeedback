@@ -420,9 +420,54 @@ router.get('/stats', authenticateToken, requireRole(['MANAGER']), async (req, re
   }
 });
 
-// Export tasks to Excel (Manager only)
-router.get('/tasks/export', authenticateToken, requireRole(['MANAGER']), async (req, res) => {
-  // ... existing export code ...
+// Export tasks to Excel or CSV (Manager only)
+router.get('/tasks/export', authenticateToken, requireRole(['MANAGER', 'OPERATIONS_MANAGER', 'PROJECT_LEAD', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
+  try {
+    const format = (req.query.format as string) === 'csv' ? 'csv' : 'excel';
+    const companyId = req.user?.companyId;
+    if (!companyId && req.user?.role !== 'ADMIN') {
+      return res.status(400).json({ error: 'Not assigned to a company' });
+    }
+
+    const tasks = await prisma.cleaningTask.findMany({
+      where: companyId ? { servicePoint: { companyId } } : {},
+      include: {
+        servicePoint: { select: { name: true, type: true, address: true } },
+        cleaner: { select: { username: true } }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const rows = tasks.map((t: any) => ({
+      'Point': t.servicePoint?.name ?? '',
+      'Type': t.servicePoint?.type ?? '',
+      'Address': t.servicePoint?.address ?? '',
+      'Cleaner': t.cleaner?.username ?? '',
+      'Status': t.status,
+      'Scheduled': t.scheduledAt ? new Date(t.scheduledAt).toISOString() : '',
+      'Completed': t.completedAt ? new Date(t.completedAt).toISOString() : ''
+    }));
+
+    if (format === 'csv') {
+      const keys = rows.length ? Object.keys(rows[0]) : ['Point', 'Type', 'Address', 'Cleaner', 'Status', 'Scheduled', 'Completed'];
+      const header = keys.join(',');
+      const body = (rows as any[]).map(r => keys.map(k => `"${String((r as any)[k] ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename=tasks_${new Date().toISOString().split('T')[0]}.csv`);
+      return res.send(Buffer.from('\uFEFF' + header + '\n' + body, 'utf-8'));
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Tasks');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=tasks_${new Date().toISOString().split('T')[0]}.xlsx`);
+    res.send(buf);
+  } catch (error) {
+    console.error('Export tasks error:', error);
+    res.status(500).json({ error: 'Failed to export tasks' });
+  }
 });
 
 // --- Маршруты (Routes): группировка объектов и назначение клинера ---

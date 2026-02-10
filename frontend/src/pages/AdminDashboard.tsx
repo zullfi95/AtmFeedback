@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { LayoutDashboard, Users, Building, MapPin, Menu, X, LogOut, Route as RouteIcon } from 'lucide-react';
@@ -11,17 +12,18 @@ import ServicePointsManagement from './admin/ServicePointsManagement';
 import RoutesManagement from './admin/RoutesManagement';
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Companies', href: '/admin/companies', icon: Building },
-    { name: 'Service Points', href: '/admin/service-points', icon: MapPin },
-    { name: 'Маршруты', href: '/admin/routes', icon: RouteIcon },
+    { name: t('dashboard.admin.nav.dashboard'), href: '/admin', icon: LayoutDashboard },
+    { name: t('dashboard.admin.nav.users'), href: '/admin/users', icon: Users },
+    { name: t('dashboard.admin.nav.companies'), href: '/admin/companies', icon: Building },
+    { name: t('dashboard.admin.nav.servicePoints'), href: '/admin/service-points', icon: MapPin },
+    { name: t('dashboard.admin.nav.routes'), href: '/admin/routes', icon: RouteIcon },
   ];
 
   const handleLogout = () => {
