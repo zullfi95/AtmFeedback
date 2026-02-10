@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  PROJECT_LEAD
+  OPERATIONS_MANAGER
+  MANAGER
+  SUPERVISOR
+  OBSERVER
+  CLEANER
+}
+
+enum CleaningStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum ServicePointType {
+  ATM
+  BUS_STOP
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  password  String
+  role      UserRole @default(CLEANER)
+  companyId String?
+
+  // Relations
+  company        Company?              @relation(fields: [companyId], references: [id])
+  cleaningTasks  CleaningTask[]
+  assignedPoints CleanerAssignment[]
+  routes         Route[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  address     String?
+
+  // Relations
+  users         User[]
+  servicePoints ServicePoint[]
+  routes        Route[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model ServicePoint {
+  id          String           @id @default(cuid())
+  name        String
+  type        ServicePointType @default(ATM)
+  address     String
+  latitude    Float
+  longitude   Float
+  companyId   String
+
+  // Relations
+  company            Company             @relation(fields: [companyId], references: [id])
+  cleaningTasks      CleaningTask[]
+  cleanerAssignments CleanerAssignment[]
+  routePoints        RoutePoint[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("service_points")
+}
+
+model CleaningTask {
+  id             String         @id @default(cuid())
+  servicePointId String
+  cleanerId      String
+  status         CleaningStatus @default(PENDING)
+  scheduledAt    DateTime?
+  completedAt    DateTime?
+  photos         String?        // JSON array of photo URLs (legacy)
+  photoBefore    String?        // URL фото до уборки
+  photoAfter     String?        // URL фото после уборки
+  photoDamage    String?        // URL фото повреждений
+  notes          String?
+  managerNotes   String?
+
+  // Relations
+  servicePoint ServicePoint @relation(fields: [servicePointId], references: [id])
+  cleaner      User         @relation(fields: [cleanerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cleaning_tasks")
+}
+
+model CleanerAssignment {
+  id             String @id @default(cuid())
+  cleanerId      String
+  servicePointId String
+
+  // Relations
+  cleaner      User         @relation(fields: [cleanerId], references: [id], onDelete: Cascade)
+  servicePoint ServicePoint @relation(fields: [servicePointId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Unique constraint: one cleaner can be assigned to one service point only once
+  @@unique([cleanerId, servicePointId])
+  @@map("cleaner_assignments")
+}
+
+model Route {
+  id        String   @id @default(cuid())
+  name      String
+  companyId String?  // опционально: маршрут может быть без привязки к компании (объекты из разных компаний)
+  cleanerId String
+  orderNum  Int      @default(0)
+
+  // Relations
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  cleaner     User         @relation(fields: [cleanerId], references: [id], onDelete: Cascade)
+  routePoints RoutePoint[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("routes")
+}
+
+model RoutePoint {
+  id             String @id @default(cuid())
+  routeId        String
+  servicePointId String
+  orderNum       Int    @default(0)
+
+  // Relations
+  route        Route        @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  servicePoint ServicePoint @relation(fields: [servicePointId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([routeId, servicePointId])
+  @@map("route_points")
+}
