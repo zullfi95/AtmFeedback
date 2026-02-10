@@ -2,6 +2,9 @@ FROM node:18
 
 WORKDIR /app
 
+# Fonts for PDF reports (Azerbaijani / Unicode)
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
+
 # Install all dependencies (including dev) for building
 COPY package*.json ./
 RUN npm ci
