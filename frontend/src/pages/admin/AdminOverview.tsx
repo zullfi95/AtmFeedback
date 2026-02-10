@@ -249,15 +249,15 @@ export default function AdminOverview() {
                     </td>
                     <td className="px-3 py-2 text-xs">
                       <div className="space-y-0.5">
-                        {(cleaner.todayTasks || []).filter((t: any) => t.status === 'COMPLETED').map((t: any) => (
-                          <div key={t.id} className="flex items-center gap-1 text-gray-500">
-                            <span className="font-medium">{t.completedAt ? new Date(t.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                            <span>{t.servicePoint?.name}</span>
-                            {(t.photos || t.photoBefore) && (
+                        {(cleaner.todayTasks || []).filter((task: any) => task.status === 'COMPLETED').map((task: any) => (
+                          <div key={task.id} className="flex items-center gap-1 text-gray-500">
+                            <span className="font-medium">{task.completedAt ? new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                            <span>{task.servicePoint?.name}</span>
+                            {(task.photos || task.photoBefore) && (
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const url = t.photoBefore || (() => { try { const p = JSON.parse(t.photos); return p?.[0]; } catch { return null; } })();
+                                  const url = task.photoBefore || (() => { try { const p = JSON.parse(task.photos); return p?.[0]; } catch { return null; } })();
                                   if (url) window.open(url.startsWith('http') ? url : `/feedbackatm/api${url}`, '_blank');
                                 }}
                                 className="text-primary hover:underline"
