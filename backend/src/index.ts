@@ -46,7 +46,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/cleaner', cleanerRoutes);
 app.use('/api/manager', managerRoutes);
 
-// Static files for uploads
+// Static files for uploads (under /api so proxy path /feedbackatm/api/uploads/... works)
+app.use('/api/uploads', express.static('uploads'));
 app.use('/uploads', express.static('uploads'));
 
 // Error handling middleware
